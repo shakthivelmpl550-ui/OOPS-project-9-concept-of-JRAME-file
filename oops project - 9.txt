@@ -1,0 +1,80 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+
+// File Service (SOLID: Single Responsibility)
+class FileService {
+    public File[] getFiles(String path) {
+        File dir = new File(path);
+        if (dir.exists() && dir.isDirectory()) {
+            return dir.listFiles();
+        }
+        return new File[0];
+    }
+}
+
+// UI Class
+class FileManagerUI extends JFrame {
+    private JList<String> fileList;
+    private DefaultListModel<String> model;
+    private FileService service;
+
+    public FileManagerUI() {
+        service = new FileService();
+
+        setTitle("Simple File Manager");
+        setSize(400, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        JButton btn = new JButton("Open Folder");
+        model = new DefaultListModel<>();
+        fileList = new JList<>(model);
+
+        add(btn, BorderLayout.NORTH);
+        add(new JScrollPane(fileList), BorderLayout.CENTER);
+
+        // Button Action
+        btn.addActionListener(e -> chooseFolder());
+
+        setVisible(true);
+    }
+
+    private void chooseFolder() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            String path = chooser.getSelectedFile().getAbsolutePath();
+            loadFiles(path);
+        }
+    }
+
+    // Multithreading
+    private void loadFiles(String path) {
+        model.clear();
+
+        Thread t = new Thread(() -> {
+            File[] files = service.getFiles(path);
+
+            for (File f : files) {
+                try {
+                    Thread.sleep(50); // simulate delay
+                } catch (Exception e) {}
+
+                SwingUtilities.invokeLater(() -> {
+                    model.addElement(f.getName());
+                });
+            }
+        });
+
+        t.start();
+    }
+}
+
+// Main Class
+class Main {
+    public static void main(String[] args) {
+        new FileManagerUI();
+    }
+}
